@@ -1,0 +1,25 @@
+package com.mustafa_mert.backend.event.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+
+@Getter
+@Setter
+public class EventSalesResponse {
+
+    private Long eventId;
+
+    private String eventName;
+
+    private String category;
+
+    private Integer totalStock;
+
+    private Integer availableStock;
+
+    private Integer soldTickets;
+
+    private BigDecimal totalRevenue;
+}
