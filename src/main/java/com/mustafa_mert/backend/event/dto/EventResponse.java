@@ -20,5 +20,5 @@ public class EventResponse {
     private BigDecimal price;
     private Integer totalStock;
     private Integer availableStock;
-
+    private String imageUrl;
 }

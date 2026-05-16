@@ -42,4 +42,7 @@ public class Event {
 
     @Column(name = "available_stock", nullable = false)
     private Integer availableStock;
+
+    @Column(name = "image_url", nullable = false)
+    private String imageUrl;
 }

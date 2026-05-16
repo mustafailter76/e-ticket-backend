@@ -73,6 +73,7 @@ public class EventServiceImpl implements EventService {
                 .dateTime(createEventRequest.getDateTime())
                 .totalStock(createEventRequest.getTotalStock())
                 .availableStock(createEventRequest.getTotalStock())
+                .imageUrl(createEventRequest.getImageUrl())
                 .build();
         Event savedEvent = eventRepository.save(event);
 
@@ -86,6 +87,7 @@ public class EventServiceImpl implements EventService {
                         .location(savedEvent.getLocation())
                         .totalStock(savedEvent.getTotalStock())
                         .availableStock(savedEvent.getAvailableStock())
+                        .imageUrl(savedEvent.getImageUrl())
                         .build();
     }
 
@@ -116,6 +118,7 @@ public class EventServiceImpl implements EventService {
             eventSalesResponse.setAvailableStock(event.getAvailableStock());
             eventSalesResponse.setSoldTickets(soldTickets);
             eventSalesResponse.setTotalRevenue(eventRevenue);
+            eventSalesResponse.setImageUrl(event.getImageUrl());
 
             eventSalesResponses.add(eventSalesResponse);
 
@@ -164,6 +167,7 @@ public class EventServiceImpl implements EventService {
                     .location(event.getLocation())
                     .totalStock(event.getTotalStock())
                     .availableStock(event.getAvailableStock())
+                    .imageUrl(event.getImageUrl())
                     .build();
             eventResponses.add(eventResponse);
         }

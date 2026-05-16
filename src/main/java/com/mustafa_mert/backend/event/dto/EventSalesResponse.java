@@ -22,4 +22,6 @@ public class EventSalesResponse {
     private Integer soldTickets;
 
     private BigDecimal totalRevenue;
+
+    private String imageUrl;
 }

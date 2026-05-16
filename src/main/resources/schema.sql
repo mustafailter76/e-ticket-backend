@@ -20,7 +20,8 @@ CREATE TABLE events (
     location VARCHAR(150) NOT NULL,
     price NUMERIC(10, 2) NOT NULL,
     total_stock INTEGER NOT NULL,
-    available_stock INTEGER NOT NULL
+    available_stock INTEGER NOT NULL,
+    image_url TEXT
 );
 
 CREATE TABLE ticket_purchases (
