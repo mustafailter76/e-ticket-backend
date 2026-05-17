@@ -61,6 +61,7 @@ public class AuthServiceImpl implements AuthService {
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setAccessToken(jwtService.generateAccessToken(user));
+        authResponse.setRole(user.getRole());
 
         return authResponse;
     }
