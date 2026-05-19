@@ -1,8 +1,4 @@
-DROP TABLE IF EXISTS ticket_purchases;
-DROP TABLE IF EXISTS events;
-DROP TABLE IF EXISTS users;
-
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
@@ -11,7 +7,7 @@ CREATE TABLE users (
     role VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
     category VARCHAR(100) NOT NULL,
@@ -24,7 +20,7 @@ CREATE TABLE events (
     image_url TEXT
 );
 
-CREATE TABLE ticket_purchases (
+CREATE TABLE IF NOT EXISTS ticket_purchases (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     event_id BIGINT NOT NULL,
@@ -46,7 +42,7 @@ CREATE TABLE ticket_purchases (
         CHECK (quantity BETWEEN 1 AND 3)
 );
 
-CREATE INDEX idx_events_name ON events(name);
-CREATE INDEX idx_events_category ON events(category);
-CREATE INDEX idx_ticket_purchases_user_id ON ticket_purchases(user_id);
-CREATE INDEX idx_ticket_purchases_event_id ON ticket_purchases(event_id);
+CREATE INDEX IF NOT EXISTS idx_events_name ON events(name);
+CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
+CREATE INDEX IF NOT EXISTS idx_ticket_purchases_user_id ON ticket_purchases(user_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_purchases_event_id ON ticket_purchases(event_id);

@@ -1,0 +1,3 @@
+spring.datasource.url=jdbc:postgresql://localhost:5432/e-ticket_db
+spring.datasource.username=your_local_username
+spring.datasource.password=your_local_password
