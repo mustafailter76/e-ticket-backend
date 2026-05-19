@@ -86,8 +86,6 @@ public class TicketPurchaseServiceImpl implements TicketPurchaseService {
     @Transactional
     @Override
     public void cancelTicket(Long id) {
-        User currentUser = currentUserProvider.getCurrentUser();
-
         TicketPurchase ticketPurchase = ticketPurchaseRepository.findById(id)
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.TICKET_PURCHASE_NOT_FOUND)));
 
@@ -108,7 +106,7 @@ public class TicketPurchaseServiceImpl implements TicketPurchaseService {
 
         List<TicketPurchase> ticketPurchases = ticketPurchaseRepository.findByUserId(currentUser.getId());
         if (ticketPurchases.isEmpty()) {
-            throw new BaseException(new ErrorMessage(MessageType.TICKET_PURCHASE_NOT_FOUND));
+            return new ArrayList<>();
         }
 
         List<TicketPurchaseResponse> ticketPurchaseResponses = new ArrayList<>();

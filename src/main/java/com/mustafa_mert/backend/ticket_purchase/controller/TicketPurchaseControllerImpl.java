@@ -20,7 +20,7 @@ public class TicketPurchaseControllerImpl extends RestBaseController implements 
 
     private final TicketPurchaseService ticketPurchaseService;
 
-    @RequestMapping("/purchase")
+    @PostMapping("/purchase")
     @PreAuthorize("hasRole('USER')")
     @Override
     public ResponseEntity<RootEntity<TicketPurchaseResponse>> purchaseTicket(@Valid @RequestBody PurchaseTicketRequest purchaseTicketRequest) {
