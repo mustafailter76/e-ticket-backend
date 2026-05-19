@@ -3,30 +3,28 @@ package com.mustafa_mert.backend.event;
 import com.mustafa_mert.backend.common.exception.BaseException;
 import com.mustafa_mert.backend.event.dto.CreateEventRequest;
 import com.mustafa_mert.backend.event.dto.EventResponse;
+import com.mustafa_mert.backend.event.dto.EventSalesResponse;
 import com.mustafa_mert.backend.event.dto.SalesDashboardResponse;
 import com.mustafa_mert.backend.event.entity.Event;
+import com.mustafa_mert.backend.event.mapper.EventMapper;
 import com.mustafa_mert.backend.event.repository.EventRepository;
 import com.mustafa_mert.backend.event.service.EventServiceImpl;
-import com.mustafa_mert.backend.user.entity.User;
+import com.mustafa_mert.backend.security.CurrentUserProvider;
 import com.mustafa_mert.backend.user.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,319 +36,250 @@ class EventServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private EventMapper eventMapper;
+
+    @Mock
+    private CurrentUserProvider currentUserProvider;
+
     @InjectMocks
     private EventServiceImpl eventService;
 
-    private User adminUser;
-    private User normalUser;
     private Event event;
-    private CreateEventRequest createEventRequest;
+    private EventResponse eventResponse;
 
     @BeforeEach
     void setUp() {
-        adminUser = User.builder()
-                .id(1L)
-                .email("admin@gmail.com")
-                .firstName("Admin")
-                .lastName("User")
-                .role("ADMIN")
-                .passwordHash("encodedPassword")
-                .build();
+        event = new Event();
+        event.setId(1L);
+        event.setName("Concert");
+        event.setCategory("Music");
+        event.setDescription("Test description");
+        event.setLocation("Istanbul");
+        event.setPrice(BigDecimal.valueOf(100));
+        event.setTotalStock(50);
+        event.setAvailableStock(50);
+        event.setDateTime(LocalDateTime.now().plusDays(5));
 
-        normalUser = User.builder()
-                .id(2L)
-                .email("user@gmail.com")
-                .firstName("Normal")
-                .lastName("User")
-                .role("USER")
-                .passwordHash("encodedPassword")
-                .build();
-
-        event = Event.builder()
+        eventResponse = EventResponse.builder()
                 .id(1L)
-                .name("Rock Concert")
+                .name("Concert")
                 .category("Music")
-                .description("Rock music event")
-                .dateTime(LocalDateTime.of(2026, 6, 10, 20, 0))
+                .description("Test description")
                 .location("Istanbul")
-                .price(new BigDecimal("500.00"))
-                .totalStock(100)
-                .availableStock(100)
+                .price(BigDecimal.valueOf(100))
+                .totalStock(50)
+                .availableStock(50)
+                .dateTime(event.getDateTime())
                 .build();
-
-        createEventRequest = new CreateEventRequest();
-        createEventRequest.setName("Rock Concert");
-        createEventRequest.setCategory("Music");
-        createEventRequest.setDescription("Rock music event");
-        createEventRequest.setDateTime(LocalDateTime.of(2026, 6, 10, 20, 0));
-        createEventRequest.setLocation("Istanbul");
-        createEventRequest.setPrice(new BigDecimal("500.00"));
-        createEventRequest.setTotalStock(100);
-    }
-
-    @AfterEach
-    void clearSecurityContext() {
-        SecurityContextHolder.clearContext();
-    }
-
-    private void setAuthenticatedUser(String email) {
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     @Test
-    void createEvent_WhenUserIsAdmin_ShouldCreateEventAndReturnEventResponse() {
-        setAuthenticatedUser("admin@gmail.com");
+    void createEvent_shouldCreateEventAndReturnEventResponse() {
+        CreateEventRequest request = new CreateEventRequest();
+        request.setName("Concert");
+        request.setCategory("Music");
+        request.setDescription("Test description");
+        request.setLocation("Istanbul");
+        request.setPrice(BigDecimal.valueOf(100));
+        request.setTotalStock(50);
+        request.setDateTime(event.getDateTime());
 
-        when(userRepository.findByEmail("admin@gmail.com")).thenReturn(Optional.of(adminUser));
-        when(eventRepository.save(any(Event.class))).thenReturn(event);
+        when(eventMapper.createEventRequestToEvent(request)).thenReturn(event);
+        when(eventRepository.save(event)).thenReturn(event);
+        when(eventMapper.eventToEventResponse(event)).thenReturn(eventResponse);
 
-        EventResponse response = eventService.createEvent(createEventRequest);
+        EventResponse response = eventService.createEvent(request);
 
-        assertNotNull(response);
-        assertEquals(event.getId(), response.getId());
-        assertEquals(event.getName(), response.getName());
-        assertEquals(event.getCategory(), response.getCategory());
-        assertEquals(event.getDescription(), response.getDescription());
-        assertEquals(event.getDateTime(), response.getDateTime());
-        assertEquals(event.getLocation(), response.getLocation());
-        assertEquals(event.getPrice(), response.getPrice());
-        assertEquals(event.getTotalStock(), response.getTotalStock());
-        assertEquals(event.getAvailableStock(), response.getAvailableStock());
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(1L);
+        assertThat(response.getName()).isEqualTo("Concert");
+        assertThat(response.getCategory()).isEqualTo("Music");
+        assertThat(response.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(100));
+        assertThat(response.getTotalStock()).isEqualTo(50);
+        assertThat(response.getAvailableStock()).isEqualTo(50);
 
-        verify(userRepository, times(1)).findByEmail("admin@gmail.com");
-        verify(eventRepository, times(1)).save(any(Event.class));
+        verify(eventMapper).createEventRequestToEvent(request);
+        verify(eventRepository).save(event);
+        verify(eventMapper).eventToEventResponse(event);
     }
 
     @Test
-    void createEvent_WhenUserIsNormalUser_ShouldThrowBaseException() {
-        setAuthenticatedUser("user@gmail.com");
+    void deleteEvent_whenEventExistsAndNoPurchases_shouldDeleteEvent() {
+        event.setTotalStock(50);
+        event.setAvailableStock(50);
 
-        when(userRepository.findByEmail("user@gmail.com")).thenReturn(Optional.of(normalUser));
-
-        assertThrows(BaseException.class, () -> eventService.createEvent(createEventRequest));
-
-        verify(userRepository, times(1)).findByEmail("user@gmail.com");
-        verify(eventRepository, never()).save(any(Event.class));
-    }
-
-    @Test
-    void createEvent_WhenCurrentUserNotFound_ShouldThrowBaseException() {
-        setAuthenticatedUser("unknown@gmail.com");
-
-        when(userRepository.findByEmail("unknown@gmail.com")).thenReturn(Optional.empty());
-
-        assertThrows(BaseException.class, () -> eventService.createEvent(createEventRequest));
-
-        verify(userRepository, times(1)).findByEmail("unknown@gmail.com");
-        verify(eventRepository, never()).save(any(Event.class));
-    }
-
-    @Test
-    void deleteEvent_WhenUserIsAdminAndEventHasNoPurchases_ShouldDeleteEvent() {
-        setAuthenticatedUser("admin@gmail.com");
-
-        when(userRepository.findByEmail("admin@gmail.com")).thenReturn(Optional.of(adminUser));
         when(eventRepository.findById(1L)).thenReturn(Optional.of(event));
 
         eventService.deleteEvent(1L);
 
-        verify(userRepository, times(1)).findByEmail("admin@gmail.com");
-        verify(eventRepository, times(1)).findById(1L);
-        verify(eventRepository, times(1)).delete(event);
+        verify(eventRepository).findById(1L);
+        verify(eventRepository).delete(event);
     }
 
     @Test
-    void deleteEvent_WhenUserIsNormalUser_ShouldThrowBaseException() {
-        setAuthenticatedUser("user@gmail.com");
+    void deleteEvent_whenEventNotFound_shouldThrowException() {
+        when(eventRepository.findById(99L)).thenReturn(Optional.empty());
 
-        when(userRepository.findByEmail("user@gmail.com")).thenReturn(Optional.of(normalUser));
+        assertThatThrownBy(() -> eventService.deleteEvent(99L))
+                .isInstanceOf(BaseException.class);
 
-        assertThrows(BaseException.class, () -> eventService.deleteEvent(1L));
-
-        verify(userRepository, times(1)).findByEmail("user@gmail.com");
-        verify(eventRepository, never()).findById(anyLong());
+        verify(eventRepository).findById(99L);
         verify(eventRepository, never()).delete(any(Event.class));
     }
 
     @Test
-    void deleteEvent_WhenEventNotFound_ShouldThrowBaseException() {
-        setAuthenticatedUser("admin@gmail.com");
+    void deleteEvent_whenEventHasPurchases_shouldThrowException() {
+        event.setTotalStock(50);
+        event.setAvailableStock(40);
 
-        when(userRepository.findByEmail("admin@gmail.com")).thenReturn(Optional.of(adminUser));
-        when(eventRepository.findById(1L)).thenReturn(Optional.empty());
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(event));
 
-        assertThrows(BaseException.class, () -> eventService.deleteEvent(1L));
+        assertThatThrownBy(() -> eventService.deleteEvent(1L))
+                .isInstanceOf(BaseException.class);
 
-        verify(userRepository, times(1)).findByEmail("admin@gmail.com");
-        verify(eventRepository, times(1)).findById(1L);
+        verify(eventRepository).findById(1L);
         verify(eventRepository, never()).delete(any(Event.class));
     }
 
     @Test
-    void deleteEvent_WhenEventHasPurchases_ShouldThrowBaseException() {
-        setAuthenticatedUser("admin@gmail.com");
+    void getSalesDashboard_shouldReturnCalculatedDashboard() {
+        Event event1 = new Event();
+        event1.setId(1L);
+        event1.setName("Concert");
+        event1.setCategory("Music");
+        event1.setPrice(BigDecimal.valueOf(100));
+        event1.setTotalStock(50);
+        event1.setAvailableStock(40);
 
-        Event purchasedEvent = Event.builder()
-                .id(1L)
-                .name("Rock Concert")
-                .category("Music")
-                .description("Rock music event")
-                .dateTime(LocalDateTime.of(2026, 6, 10, 20, 0))
-                .location("Istanbul")
-                .price(new BigDecimal("500.00"))
-                .totalStock(100)
-                .availableStock(80)
+        Event event2 = new Event();
+        event2.setId(2L);
+        event2.setName("Theatre");
+        event2.setCategory("Art");
+        event2.setPrice(BigDecimal.valueOf(200));
+        event2.setTotalStock(30);
+        event2.setAvailableStock(25);
+
+        EventSalesResponse salesResponse1 = EventSalesResponse.builder()
+                .eventId(1L)
+                .eventName("Concert")
                 .build();
 
-        when(userRepository.findByEmail("admin@gmail.com")).thenReturn(Optional.of(adminUser));
-        when(eventRepository.findById(1L)).thenReturn(Optional.of(purchasedEvent));
-
-        assertThrows(BaseException.class, () -> eventService.deleteEvent(1L));
-
-        verify(userRepository, times(1)).findByEmail("admin@gmail.com");
-        verify(eventRepository, times(1)).findById(1L);
-        verify(eventRepository, never()).delete(any(Event.class));
-    }
-
-    @Test
-    void getSalesDashboard_WhenUserIsAdmin_ShouldReturnDashboardResponse() {
-        setAuthenticatedUser("admin@gmail.com");
-
-        Event event1 = Event.builder()
-                .id(1L)
-                .name("Rock Concert")
-                .category("Music")
-                .description("Rock music event")
-                .dateTime(LocalDateTime.of(2026, 6, 10, 20, 0))
-                .location("Istanbul")
-                .price(new BigDecimal("500.00"))
-                .totalStock(100)
-                .availableStock(80)
+        EventSalesResponse salesResponse2 = EventSalesResponse.builder()
+                .eventId(2L)
+                .eventName("Theatre")
                 .build();
 
-        Event event2 = Event.builder()
-                .id(2L)
-                .name("Football Match")
-                .category("Sport")
-                .description("Football event")
-                .dateTime(LocalDateTime.of(2026, 7, 5, 21, 0))
-                .location("Kadikoy")
-                .price(new BigDecimal("300.00"))
-                .totalStock(200)
-                .availableStock(150)
-                .build();
-
-        when(userRepository.findByEmail("admin@gmail.com")).thenReturn(Optional.of(adminUser));
-        when(eventRepository.findAll()).thenReturn(Arrays.asList(event1, event2));
+        when(eventRepository.findAll()).thenReturn(List.of(event1, event2));
+        when(eventMapper.eventToEventSalesResponse(event1)).thenReturn(salesResponse1);
+        when(eventMapper.eventToEventSalesResponse(event2)).thenReturn(salesResponse2);
 
         SalesDashboardResponse response = eventService.getSalesDashboard();
 
-        assertNotNull(response);
-        assertEquals(2, response.getTotalEventCount());
-        assertEquals(70, response.getTotalSoldTickets());
-        assertEquals(new BigDecimal("25000.00"), response.getTotalRevenue());
-        assertEquals(2, response.getEvents().size());
+        assertThat(response).isNotNull();
+        assertThat(response.getTotalEventCount()).isEqualTo(2);
+        assertThat(response.getTotalSoldTickets()).isEqualTo(15);
+        assertThat(response.getTotalRevenue()).isEqualByComparingTo(BigDecimal.valueOf(2000));
+        assertThat(response.getEvents()).hasSize(2);
 
-        assertEquals(1L, response.getEvents().get(0).getEventId());
-        assertEquals("Rock Concert", response.getEvents().get(0).getEventName());
-        assertEquals(20, response.getEvents().get(0).getSoldTickets());
-        assertEquals(new BigDecimal("10000.00"), response.getEvents().get(0).getTotalRevenue());
+        assertThat(response.getEvents().get(0).getSoldTickets()).isEqualTo(10);
+        assertThat(response.getEvents().get(0).getTotalRevenue()).isEqualByComparingTo(BigDecimal.valueOf(1000));
 
-        assertEquals(2L, response.getEvents().get(1).getEventId());
-        assertEquals("Football Match", response.getEvents().get(1).getEventName());
-        assertEquals(50, response.getEvents().get(1).getSoldTickets());
-        assertEquals(new BigDecimal("15000.00"), response.getEvents().get(1).getTotalRevenue());
+        assertThat(response.getEvents().get(1).getSoldTickets()).isEqualTo(5);
+        assertThat(response.getEvents().get(1).getTotalRevenue()).isEqualByComparingTo(BigDecimal.valueOf(1000));
 
-        verify(userRepository, times(1)).findByEmail("admin@gmail.com");
-        verify(eventRepository, times(1)).findAll();
+        verify(eventRepository).findAll();
+        verify(eventMapper).eventToEventSalesResponse(event1);
+        verify(eventMapper).eventToEventSalesResponse(event2);
     }
 
     @Test
-    void getSalesDashboard_WhenUserIsNotAdmin_ShouldThrowBaseException() {
-        setAuthenticatedUser("user@gmail.com");
+    void getSalesDashboard_whenThereAreNoEvents_shouldReturnEmptyDashboard() {
+        when(eventRepository.findAll()).thenReturn(List.of());
 
-        when(userRepository.findByEmail("user@gmail.com")).thenReturn(Optional.of(normalUser));
+        SalesDashboardResponse response = eventService.getSalesDashboard();
 
-        assertThrows(BaseException.class, () -> eventService.getSalesDashboard());
+        assertThat(response).isNotNull();
+        assertThat(response.getTotalEventCount()).isEqualTo(0);
+        assertThat(response.getTotalSoldTickets()).isEqualTo(0);
+        assertThat(response.getTotalRevenue()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(response.getEvents()).isEmpty();
 
-        verify(userRepository, times(1)).findByEmail("user@gmail.com");
-        verify(eventRepository, never()).findAll();
+        verify(eventRepository).findAll();
+        verify(eventMapper, never()).eventToEventSalesResponse(any(Event.class));
     }
 
     @Test
-    void getEvents_WhenNameAndCategoryAreGiven_ShouldReturnFilteredEvents() {
-        when(eventRepository.findByNameContainingIgnoreCaseAndCategoryIgnoreCaseOrderByDateTimeAsc("Rock", "Music"))
-                .thenReturn(Collections.singletonList(event));
+    void getEvents_whenNameAndCategoryGiven_shouldUseNameAndCategoryFilter() {
+        when(eventRepository.findByNameContainingIgnoreCaseAndCategoryIgnoreCaseOrderByDateTimeAsc("con", "Music"))
+                .thenReturn(List.of(event));
+        when(eventMapper.eventToEventResponse(event)).thenReturn(eventResponse);
 
-        List<EventResponse> responses = eventService.getEvents("Rock", "Music");
+        List<EventResponse> responses = eventService.getEvents("con", "Music");
 
-        assertNotNull(responses);
-        assertEquals(1, responses.size());
-        assertEquals(event.getId(), responses.get(0).getId());
-        assertEquals(event.getName(), responses.get(0).getName());
-        assertEquals(event.getCategory(), responses.get(0).getCategory());
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getId()).isEqualTo(1L);
 
-        verify(eventRepository, times(1))
-                .findByNameContainingIgnoreCaseAndCategoryIgnoreCaseOrderByDateTimeAsc("Rock", "Music");
-        verify(eventRepository, never()).findAllByOrderByDateTimeAsc();
+        verify(eventRepository)
+                .findByNameContainingIgnoreCaseAndCategoryIgnoreCaseOrderByDateTimeAsc("con", "Music");
+        verify(eventMapper).eventToEventResponse(event);
     }
 
     @Test
-    void getEvents_WhenOnlyNameIsGiven_ShouldReturnEventsByName() {
-        when(eventRepository.findByNameContainingIgnoreCaseOrderByDateTimeAsc("Rock"))
-                .thenReturn(Collections.singletonList(event));
+    void getEvents_whenOnlyNameGiven_shouldUseNameFilter() {
+        when(eventRepository.findByNameContainingIgnoreCaseOrderByDateTimeAsc("con"))
+                .thenReturn(List.of(event));
+        when(eventMapper.eventToEventResponse(event)).thenReturn(eventResponse);
 
-        List<EventResponse> responses = eventService.getEvents("Rock", null);
+        List<EventResponse> responses = eventService.getEvents("con", null);
 
-        assertNotNull(responses);
-        assertEquals(1, responses.size());
-        assertEquals("Rock Concert", responses.get(0).getName());
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getName()).isEqualTo("Concert");
 
-        verify(eventRepository, times(1)).findByNameContainingIgnoreCaseOrderByDateTimeAsc("Rock");
+        verify(eventRepository).findByNameContainingIgnoreCaseOrderByDateTimeAsc("con");
+        verify(eventMapper).eventToEventResponse(event);
     }
 
     @Test
-    void getEvents_WhenOnlyCategoryIsGiven_ShouldReturnEventsByCategory() {
+    void getEvents_whenOnlyCategoryGiven_shouldUseCategoryFilter() {
         when(eventRepository.findByCategoryIgnoreCaseOrderByDateTimeAsc("Music"))
-                .thenReturn(Collections.singletonList(event));
+                .thenReturn(List.of(event));
+        when(eventMapper.eventToEventResponse(event)).thenReturn(eventResponse);
 
         List<EventResponse> responses = eventService.getEvents(null, "Music");
 
-        assertNotNull(responses);
-        assertEquals(1, responses.size());
-        assertEquals("Music", responses.get(0).getCategory());
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getCategory()).isEqualTo("Music");
 
-        verify(eventRepository, times(1)).findByCategoryIgnoreCaseOrderByDateTimeAsc("Music");
+        verify(eventRepository).findByCategoryIgnoreCaseOrderByDateTimeAsc("Music");
+        verify(eventMapper).eventToEventResponse(event);
     }
 
     @Test
-    void getEvents_WhenNameAndCategoryAreNull_ShouldReturnAllEvents() {
-        when(eventRepository.findAllByOrderByDateTimeAsc())
-                .thenReturn(Collections.singletonList(event));
+    void getEvents_whenNoFilterGiven_shouldReturnAllEventsOrderedByDate() {
+        when(eventRepository.findAllByOrderByDateTimeAsc()).thenReturn(List.of(event));
+        when(eventMapper.eventToEventResponse(event)).thenReturn(eventResponse);
 
         List<EventResponse> responses = eventService.getEvents(null, null);
 
-        assertNotNull(responses);
-        assertEquals(1, responses.size());
-        assertEquals(event.getId(), responses.get(0).getId());
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getId()).isEqualTo(1L);
 
-        verify(eventRepository, times(1)).findAllByOrderByDateTimeAsc();
+        verify(eventRepository).findAllByOrderByDateTimeAsc();
+        verify(eventMapper).eventToEventResponse(event);
     }
 
     @Test
-    void getEvents_WhenNameAndCategoryAreBlank_ShouldReturnAllEvents() {
-        when(eventRepository.findAllByOrderByDateTimeAsc())
-                .thenReturn(Collections.singletonList(event));
+    void getEvents_whenBlankNameAndBlankCategoryGiven_shouldReturnAllEventsOrderedByDate() {
+        when(eventRepository.findAllByOrderByDateTimeAsc()).thenReturn(List.of(event));
+        when(eventMapper.eventToEventResponse(event)).thenReturn(eventResponse);
 
         List<EventResponse> responses = eventService.getEvents("   ", "   ");
 
-        assertNotNull(responses);
-        assertEquals(1, responses.size());
-        assertEquals(event.getName(), responses.get(0).getName());
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getId()).isEqualTo(1L);
 
-        verify(eventRepository, times(1)).findAllByOrderByDateTimeAsc();
+        verify(eventRepository).findAllByOrderByDateTimeAsc();
+        verify(eventMapper).eventToEventResponse(event);
     }
 }

@@ -5,6 +5,7 @@ import com.mustafa_mert.backend.common.exception.ErrorMessage;
 import com.mustafa_mert.backend.common.exception.MessageType;
 import com.mustafa_mert.backend.event.entity.Event;
 import com.mustafa_mert.backend.event.repository.EventRepository;
+import com.mustafa_mert.backend.security.CurrentUserProvider;
 import com.mustafa_mert.backend.ticket_purchase.entity.TicketPurchase;
 import com.mustafa_mert.backend.ticket_purchase.repository.TicketPurchaseRepository;
 import com.mustafa_mert.backend.user.dto.ChangePasswordRequest;
@@ -13,6 +14,7 @@ import com.mustafa_mert.backend.user.entity.User;
 import com.mustafa_mert.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,23 +30,10 @@ public class UserServiceImpl implements UserService {
     private final EventRepository eventRepository;
     private final TicketPurchaseRepository ticketPurchaseRepository;
     private final PasswordEncoder passwordEncoder;
-
-    private User getCurrentUser() {
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new BaseException(
-                        new ErrorMessage(MessageType.USER_NOT_FOUND)
-                ));
-    }
+    private final CurrentUserProvider currentUserProvider;
 
     public UserResponse getMe() {
-
-        User user = getCurrentUser();
-
+        User user = currentUserProvider.getCurrentUser();
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -57,8 +46,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public void changePassword(ChangePasswordRequest changePasswordRequest) {
-
-        User user = getCurrentUser();
+        User user = currentUserProvider.getCurrentUser();
         if (passwordEncoder.matches(changePasswordRequest.getPassword(), user.getPasswordHash())) {
             throw new BaseException(new ErrorMessage(MessageType.INVALID_CURRENT_PASSWORD));
         }
@@ -70,10 +58,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public void deleteMe() {
-        User user = getCurrentUser();
-        if (user.getRole().equals("ADMIN")) {
-            throw new BaseException(new ErrorMessage(MessageType.ONLY_FOR_USER));
-        }
+        User user = currentUserProvider.getCurrentUser();
         List<TicketPurchase> ticketPurchases = ticketPurchaseRepository.findByUserId(user.getId());
         ticketPurchases.stream()
                 .filter(tp -> tp.getEvent().getDateTime().isAfter(LocalDateTime.now()))

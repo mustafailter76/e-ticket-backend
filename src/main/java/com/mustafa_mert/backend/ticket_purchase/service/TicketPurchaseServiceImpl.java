@@ -5,7 +5,9 @@ import com.mustafa_mert.backend.common.exception.ErrorMessage;
 import com.mustafa_mert.backend.common.exception.MessageType;
 import com.mustafa_mert.backend.event.dto.EventResponse;
 import com.mustafa_mert.backend.event.entity.Event;
+import com.mustafa_mert.backend.event.mapper.EventMapper;
 import com.mustafa_mert.backend.event.repository.EventRepository;
+import com.mustafa_mert.backend.security.CurrentUserProvider;
 import com.mustafa_mert.backend.ticket_purchase.dto.PurchaseTicketRequest;
 import com.mustafa_mert.backend.ticket_purchase.dto.TicketPurchaseResponse;
 import com.mustafa_mert.backend.ticket_purchase.entity.TicketPurchase;
@@ -30,26 +32,13 @@ public class TicketPurchaseServiceImpl implements TicketPurchaseService {
     private final TicketPurchaseRepository ticketPurchaseRepository;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
-
-    private User getCurrentUser() {
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new BaseException(
-                        new ErrorMessage(MessageType.USER_NOT_FOUND)
-                ));
-    }
+    private final EventMapper eventMapper;
+    private final CurrentUserProvider currentUserProvider;
 
     @Transactional
     @Override
     public TicketPurchaseResponse purchaseTicket(PurchaseTicketRequest purchaseTicketRequest) {
-        User currentUser = getCurrentUser();
-        if (currentUser.getRole().equals("ADMIN")) {
-            throw new BaseException(new ErrorMessage(MessageType.ONLY_FOR_USER));
-        }
+        User currentUser = currentUserProvider.getCurrentUser();
 
         Event event = eventRepository.findById(purchaseTicketRequest.getEventId())
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.EVENT_NOT_FOUND)));
@@ -74,17 +63,7 @@ public class TicketPurchaseServiceImpl implements TicketPurchaseService {
 
         TicketPurchase savedTicketPurchase = ticketPurchaseRepository.save(ticketPurchase);
 
-        EventResponse eventResponse = EventResponse.builder()
-                .id(event.getId())
-                .name(event.getName())
-                .category(event.getCategory())
-                .description(event.getDescription())
-                .dateTime(event.getDateTime())
-                .location(event.getLocation())
-                .price(event.getPrice())
-                .totalStock(event.getTotalStock())
-                .availableStock(event.getAvailableStock())
-                .build();
+        EventResponse eventResponse = eventMapper.eventToEventResponse(event);
 
         UserResponse userResponse = UserResponse.builder()
                 .id(currentUser.getId())
@@ -107,10 +86,7 @@ public class TicketPurchaseServiceImpl implements TicketPurchaseService {
     @Transactional
     @Override
     public void cancelTicket(Long id) {
-        User currentUser = getCurrentUser();
-        if (currentUser.getRole().equals("ADMIN")) {
-            throw new BaseException(new ErrorMessage(MessageType.ONLY_FOR_USER));
-        }
+        User currentUser = currentUserProvider.getCurrentUser();
 
         TicketPurchase ticketPurchase = ticketPurchaseRepository.findById(id)
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.TICKET_PURCHASE_NOT_FOUND)));
@@ -128,10 +104,7 @@ public class TicketPurchaseServiceImpl implements TicketPurchaseService {
 
     @Override
     public List<TicketPurchaseResponse> getAllPurchasedTickets() {
-        User currentUser = getCurrentUser();
-        if (currentUser.getRole().equals("ADMIN")) {
-            throw new BaseException(new ErrorMessage(MessageType.ONLY_FOR_USER));
-        }
+        User currentUser = currentUserProvider.getCurrentUser();
 
         List<TicketPurchase> ticketPurchases = ticketPurchaseRepository.findByUserId(currentUser.getId());
         if (ticketPurchases.isEmpty()) {
@@ -144,17 +117,7 @@ public class TicketPurchaseServiceImpl implements TicketPurchaseService {
 
             Event event = tp.getEvent();
 
-            EventResponse eventResponse = EventResponse.builder()
-                    .id(event.getId())
-                    .name(event.getName())
-                    .category(event.getCategory())
-                    .description(event.getDescription())
-                    .dateTime(event.getDateTime())
-                    .location(event.getLocation())
-                    .price(event.getPrice())
-                    .totalStock(event.getTotalStock())
-                    .availableStock(event.getAvailableStock())
-                    .build();
+            EventResponse eventResponse = eventMapper.eventToEventResponse(event);
 
             User user = tp.getUser();
 

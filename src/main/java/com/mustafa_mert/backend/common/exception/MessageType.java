@@ -11,7 +11,7 @@ public enum MessageType {
     BAD_REQUEST("1002", "Bad request", 400),
     INTERNAL_SERVER_ERROR("1003", "Internal server error", 500),
     UNAUTHORIZED("1004", "Unauthorized access", 401),
-    FORBIDDEN("1005", "Forbidden access", 403),
+    FORBIDDEN("1005", "You are not authorized to perform this operation", 403),
     EMAIL_ALREADY_EXIST("1006", "Email already exists", 400),
     EMAIL_NOT_FOUND("1007", "Email not found", 404),
     INVALID_CREDENTIALS("1008", "Invalid credentials", 401),

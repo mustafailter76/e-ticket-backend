@@ -22,6 +22,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
+
     @Transactional
     @Override
     public AuthResponse register(RegisterRequest registerRequest) {

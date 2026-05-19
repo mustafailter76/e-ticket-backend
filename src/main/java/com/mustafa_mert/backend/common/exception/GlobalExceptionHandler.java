@@ -4,6 +4,7 @@ import com.mustafa_mert.backend.common.response.RootEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -54,6 +55,21 @@ public class GlobalExceptionHandler {
                 .body(RootEntity.error(
                         MessageType.GENERAL_EXCEPTION.getMessage(),
                         HttpStatus.INTERNAL_SERVER_ERROR.value()
+                ));
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<RootEntity<?>> handleAuthorizationDeniedException(
+            AuthorizationDeniedException ex,
+            WebRequest request
+    ) {
+        log.error("Authorization denied: {}", ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(RootEntity.error(
+                        MessageType.FORBIDDEN.getMessage(),
+                        HttpStatus.FORBIDDEN.value()
                 ));
     }
 }

@@ -8,6 +8,7 @@ import com.mustafa_mert.backend.ticket_purchase.service.TicketPurchaseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,12 +21,14 @@ public class TicketPurchaseControllerImpl extends RestBaseController implements 
     private final TicketPurchaseService ticketPurchaseService;
 
     @RequestMapping("/purchase")
+    @PreAuthorize("hasRole('USER')")
     @Override
     public ResponseEntity<RootEntity<TicketPurchaseResponse>> purchaseTicket(@Valid @RequestBody PurchaseTicketRequest purchaseTicketRequest) {
         return ok(ticketPurchaseService.purchaseTicket(purchaseTicketRequest));
     }
 
     @DeleteMapping("/cancel/{id}")
+    @PreAuthorize("hasRole('USER')")
     @Override
     public ResponseEntity<RootEntity<?>> cancelTicket(@PathVariable Long id) {
         ticketPurchaseService.cancelTicket(id);
@@ -33,6 +36,7 @@ public class TicketPurchaseControllerImpl extends RestBaseController implements 
     }
 
     @GetMapping("/all")
+    @PreAuthorize("hasRole('USER')")
     @Override
     public ResponseEntity<RootEntity<List<TicketPurchaseResponse>>> getAllPurchasedTickets() {
         return ok(ticketPurchaseService.getAllPurchasedTickets());

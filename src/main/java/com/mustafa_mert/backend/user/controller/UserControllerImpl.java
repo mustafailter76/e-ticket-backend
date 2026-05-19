@@ -8,6 +8,7 @@ import com.mustafa_mert.backend.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,6 +32,7 @@ public class UserControllerImpl extends RestBaseController implements UserContro
     }
 
     @DeleteMapping("/delete")
+    @PreAuthorize("hasRole('USER')")
     @Override
     public ResponseEntity<RootEntity<?>> deleteMe() {
         userService.deleteMe();

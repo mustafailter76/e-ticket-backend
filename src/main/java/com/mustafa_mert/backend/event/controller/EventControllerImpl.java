@@ -9,6 +9,7 @@ import com.mustafa_mert.backend.event.service.EventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class EventControllerImpl extends RestBaseController implements EventCont
     private final EventService eventService;
 
     @DeleteMapping("/delete/{eventId}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Override
     public ResponseEntity<RootEntity<?>> deleteEvent(@PathVariable Long eventId) {
         eventService.deleteEvent(eventId);
@@ -28,12 +30,14 @@ public class EventControllerImpl extends RestBaseController implements EventCont
     }
 
     @PostMapping("/create")
+    @PreAuthorize("hasRole('ADMIN')")
     @Override
     public ResponseEntity<RootEntity<EventResponse>> createEvent(@Valid @RequestBody CreateEventRequest createEventRequest) {
         return ok(eventService.createEvent(createEventRequest));
     }
 
     @GetMapping("/sales-dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
     @Override
     public ResponseEntity<RootEntity<SalesDashboardResponse>> getSalesDashboard() {
         return ok(eventService.getSalesDashboard());
