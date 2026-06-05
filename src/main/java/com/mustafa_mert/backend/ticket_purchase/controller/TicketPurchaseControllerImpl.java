@@ -5,6 +5,10 @@ import com.mustafa_mert.backend.common.response.RootEntity;
 import com.mustafa_mert.backend.ticket_purchase.dto.PurchaseTicketRequest;
 import com.mustafa_mert.backend.ticket_purchase.dto.TicketPurchaseResponse;
 import com.mustafa_mert.backend.ticket_purchase.service.TicketPurchaseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +24,17 @@ public class TicketPurchaseControllerImpl extends RestBaseController implements 
 
     private final TicketPurchaseService ticketPurchaseService;
 
+    @Operation(
+            summary = "Bilet satın al",
+            description = "Kullanıcı seçilen etkinlik için 1 ile 3 arasında bilet satın alır.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Bilet başarıyla satın alındı"),
+            @ApiResponse(responseCode = "404", description = "Etkinlik bulunamadı"),
+            @ApiResponse(responseCode = "400", description = "Yetersiz bilet stoğu"),
+
+    })
     @PostMapping("/purchase")
     @PreAuthorize("hasRole('USER')")
     @Override
